@@ -1,0 +1,46 @@
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: jannidhi-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=mplads_sentinel
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jannidhi-backend
+    restart: unless-stopped
+    ports:
+      - "7860:7860"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+      - MONGO_DB_NAME=mplads_sentinel
+      - SEED_FROM_SAMPLE=1
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173
+      - JWT_SECRET_KEY=dev-secret-key-change-in-production-2026
+      - SYNC_CRON_HOUR=19
+      - SYNC_CRON_MINUTE=0
+      - SYNC_CRON_TIMEZONE=Asia/Kolkata
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app/backend
+      - ./model:/app/model
+      - ./data:/app/data
+
+volumes:
+  mongo_data:
+    driver: local

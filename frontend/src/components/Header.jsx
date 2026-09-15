@@ -1,0 +1,233 @@
+import React from 'react';
+import {
+  ShieldCheck, Landmark, RefreshCw, Lock, LogOut,
+  LayoutDashboard, ListChecks, Users, MapPin, Scale,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from '@/components/ui/tooltip';
+
+const NAV_TABS = [
+  { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'queue', label: 'Priority Queue', icon: ListChecks },
+  { id: 'mps', label: 'MPs', icon: Users },
+  { id: 'states', label: 'States', icon: MapPin },
+  { id: 'compare', label: 'Compare', icon: Scale },
+];
+
+export default function Header({
+  activeTab,
+  setActiveTab,
+  currentRole,
+  loggedInUser,
+  onOpenLogin,
+  onLogout,
+  syncStatus,
+  onTriggerSync,
+  isSyncing,
+  house,
+  setHouse,
+}) {
+  const isAuthenticated = loggedInUser && currentRole !== 'Read-Only Public Tier';
+
+  return (
+    <TooltipProvider delayDuration={150}>
+      <header className="glass-panel border-b sticky top-0 z-40 px-4 sm:px-6 py-2.5 transition-all bg-white/95 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 lg:gap-4">
+          
+          {/* Left Section: Brand Logo */}
+          <div className="flex items-center justify-between lg:justify-start shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0 select-none cursor-pointer" onClick={() => setActiveTab('overview')}>
+              <img
+                src="/brand/jannidhi-brand.png"
+                alt="JanNidhi brand logo"
+                className="h-9 sm:h-10 w-auto object-contain"
+              />
+            </div>
+
+            {/* Compact Mobile Quick-Status (< lg only) */}
+            <div className="flex lg:hidden items-center gap-2 shrink-0">
+              <div
+                className={`h-7 px-2 rounded-lg border text-[11px] font-medium inline-flex items-center gap-1.5 ${
+                  syncStatus?.is_data_stale
+                    ? 'border-amber-200 bg-amber-50 text-amber-800'
+                    : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${syncStatus?.is_data_stale ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
+                <span>{syncStatus?.is_data_stale ? 'Stale' : 'Live'}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Center Section: Navigation Tabs */}
+          <nav className="flex items-center justify-center gap-1 bg-slate-100/90 dark:bg-muted/60 border border-slate-200/80 dark:border-border/80 p-1 rounded-xl shadow-2xs overflow-x-auto max-w-full">
+            {NAV_TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-xs font-semibold transition-all duration-150 whitespace-nowrap cursor-pointer select-none ${
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-xs shadow-primary/25'
+                      : 'text-slate-600 dark:text-muted-foreground hover:text-slate-900 dark:hover:text-foreground hover:bg-white/80 dark:hover:bg-accent/50'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? 'text-primary-foreground' : 'text-slate-500'}`} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Right Section: Controls & Scope Cluster on Desktop */}
+          <div className="hidden lg:flex items-center justify-end gap-2 shrink-0">
+            {/* House Scope Filter */}
+            <Select value={house || "ALL"} onValueChange={(v) => setHouse(v === "ALL" ? '' : v)}>
+              <SelectTrigger className="h-9 min-w-[130px] px-3 gap-2 rounded-xl border-slate-200/90 bg-white text-xs font-medium shadow-2xs hover:bg-slate-50 transition-colors focus:ring-primary/20 cursor-pointer">
+                <Landmark className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end" className="rounded-xl shadow-lg border-slate-200/80">
+                <SelectItem value="ALL" className="text-xs cursor-pointer">Both Houses</SelectItem>
+                <SelectItem value="Lok Sabha" className="text-xs cursor-pointer">Lok Sabha</SelectItem>
+                <SelectItem value="Rajya Sabha" className="text-xs cursor-pointer">Rajya Sabha</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Live Sync Action Button */}
+            {currentRole === 'MoSPI Reviewer' && onTriggerSync && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onTriggerSync('live')}
+                disabled={isSyncing}
+                className="h-9 px-3 rounded-xl border-indigo-200 bg-indigo-50/80 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800 text-xs font-semibold shadow-2xs gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? 'Syncing...' : 'Sync Live Data'}</span>
+              </Button>
+            )}
+
+            {/* Live Data Freshness Capsule */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={`h-9 px-3 rounded-xl border text-xs font-medium inline-flex items-center gap-2 cursor-default select-none shadow-2xs whitespace-nowrap transition-colors ${
+                    syncStatus?.is_data_stale
+                      ? 'border-amber-200 bg-amber-50/90 text-amber-800'
+                      : 'border-emerald-200/90 bg-emerald-50/90 text-emerald-800'
+                  }`}
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                      syncStatus?.is_data_stale ? 'bg-amber-400' : 'bg-emerald-400'
+                    }`} />
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                      syncStatus?.is_data_stale ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`} />
+                  </span>
+                  <span>{syncStatus?.is_data_stale ? 'Data Stale' : 'Data Fresh'}</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="text-xs rounded-lg shadow-md">
+                {syncStatus?.staleness_message || 'Data verified with MoSPI live portal records'}
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Authenticated User Badge & Controls */}
+            {isAuthenticated ? (
+              <div className="flex items-center gap-1.5 bg-indigo-50/90 border border-indigo-200/80 rounded-xl pl-3 pr-1 py-1 shadow-2xs">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-indigo-900">
+                  <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                  <span>{currentRole}</span>
+                  <span className="text-[11px] font-normal text-indigo-700">({loggedInUser})</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onLogout}
+                  className="h-7 px-2 rounded-lg text-xs font-medium text-slate-600 hover:text-rose-600 hover:bg-white/80 cursor-pointer ml-1"
+                >
+                  <LogOut className="w-3.5 h-3.5 mr-1" />
+                  Logout
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onOpenLogin}
+                className="h-9 px-3.5 rounded-xl border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-800 shadow-2xs gap-1.5 cursor-pointer"
+              >
+                <Lock className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Auditor / MoSPI Login</span>
+              </Button>
+            )}
+
+          </div>
+
+          {/* Mobile Secondary Controls Bar (< lg only) */}
+          <div className="flex lg:hidden items-center justify-between gap-2 pt-2 border-t border-slate-200/60">
+            <div className="flex items-center gap-1.5 flex-1">
+              <Select value={house || "ALL"} onValueChange={(v) => setHouse(v === "ALL" ? '' : v)}>
+                <SelectTrigger className="h-8 text-xs rounded-lg flex-1 border-slate-200/90 bg-white">
+                  <Landmark className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL" className="text-xs">Both Houses</SelectItem>
+                  <SelectItem value="Lok Sabha" className="text-xs">Lok Sabha</SelectItem>
+                  <SelectItem value="Rajya Sabha" className="text-xs">Rajya Sabha</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {isAuthenticated ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onLogout}
+                  className="h-8 px-2.5 rounded-lg text-xs font-medium text-slate-700 bg-indigo-50 border border-indigo-200/80"
+                >
+                  <LogOut className="w-3.5 h-3.5 mr-1" />
+                  Logout ({loggedInUser})
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onOpenLogin}
+                  className="h-8 px-2.5 rounded-lg border-slate-200 bg-white text-xs font-medium"
+                >
+                  <Lock className="w-3 h-3 text-indigo-600 mr-1" />
+                  Sign In
+                </Button>
+              )}
+
+              {currentRole === 'MoSPI Reviewer' && onTriggerSync && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onTriggerSync('live')}
+                  disabled={isSyncing}
+                  className="h-8 px-2.5 rounded-lg border-indigo-200 bg-indigo-50 text-indigo-700 text-xs font-semibold gap-1"
+                >
+                  <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
+                </Button>
+              )}
+            </div>
+          </div>
+
+        </div>
+      </header>
+    </TooltipProvider>
+  );
+}

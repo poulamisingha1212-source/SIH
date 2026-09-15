@@ -1,0 +1,60 @@
+services:
+  # ----------------------------------------------------------------------------
+  # SERVICE 1: Main Public Web API & Dashboard Backend
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: jannidhi-api
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ENVIRONMENT
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGO_DB_NAME
+        value: mplads_sentinel
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: ENABLE_IN_PROCESS_SCHEDULER
+        value: "0"
+      - key: SEED_FROM_SAMPLE
+        value: "1"
+
+  # ----------------------------------------------------------------------------
+  # SERVICE 2: Dedicated MPLADS Batch Scraper (Cron / Background Worker)
+  # ----------------------------------------------------------------------------
+  - type: cron
+    name: jannidhi-mplads-scraper
+    runtime: python
+    plan: free
+    region: oregon
+    schedule: "0 */6 * * *" # Runs every 6 hours
+    buildCommand: pip install -r requirements.txt
+    startCommand: python scraper.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: ENVIRONMENT
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGO_DB_NAME
+        value: mplads_sentinel
+      - key: BATCH_SIZE
+        value: "5000"
+      - key: SCRAPER_CHUNK_SIZE
+        value: "100"
+      - key: SCRAPER_CONCURRENCY
+        value: "3"
+      - key: REQUEST_TIMEOUT
+        value: "30"
+      - key: MPLADS_LIVE_HOUSE
+        value: "rajya_sabha"

@@ -1,6 +1,6 @@
 services:
   # ----------------------------------------------------------------------------
-  # SERVICE 1: Main Public Web API & Dashboard Backend
+  # SERVICE 1: Main Public Web API & Dashboard Backend (100% FREE on Render)
   # ----------------------------------------------------------------------------
   - type: web
     name: jannidhi-api
@@ -29,32 +29,32 @@ services:
         value: "1"
 
   # ----------------------------------------------------------------------------
-  # SERVICE 2: Dedicated MPLADS Batch Scraper (Cron / Background Worker)
+  # NOTE: Render charges for native Cron Jobs ($1+/mo) & Workers ($7+/mo).
+  # For 100% FREE automation:
+  #   Use GitHub Actions (.github/workflows/scraper_cron.yml) which runs
+  #   every 6 hours or on-demand with 7GB RAM and 2,000 free minutes/month!
+  # If you have a paid Render plan and prefer native cron, uncomment below:
   # ----------------------------------------------------------------------------
-  - type: cron
-    name: jannidhi-mplads-scraper
-    runtime: python
-    plan: free
-    region: oregon
-    schedule: "0 */6 * * *" # Runs every 6 hours
-    buildCommand: pip install -r requirements.txt
-    startCommand: python scraper.py
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
-      - key: ENVIRONMENT
-        value: production
-      - key: MONGODB_URI
-        sync: false
-      - key: MONGO_DB_NAME
-        value: mplads_sentinel
-      - key: BATCH_SIZE
-        value: "5000"
-      - key: SCRAPER_CHUNK_SIZE
-        value: "100"
-      - key: SCRAPER_CONCURRENCY
-        value: "3"
-      - key: REQUEST_TIMEOUT
-        value: "30"
-      - key: MPLADS_LIVE_HOUSE
-        value: "rajya_sabha"
+  # - type: cron
+  #   name: jannidhi-mplads-scraper
+  #   runtime: python
+  #   schedule: "0 */6 * * *"
+  #   buildCommand: pip install -r requirements.txt
+  #   startCommand: python scraper.py
+  #   envVars:
+  #     - key: PYTHON_VERSION
+  #       value: 3.11.9
+  #     - key: MONGODB_URI
+  #       sync: false
+  #     - key: MONGO_DB_NAME
+  #       value: mplads_sentinel
+  #     - key: BATCH_SIZE
+  #       value: "5000"
+  #     - key: SCRAPER_CHUNK_SIZE
+  #       value: "100"
+  #     - key: SCRAPER_CONCURRENCY
+  #       value: "3"
+  #     - key: REQUEST_TIMEOUT
+  #       value: "30"
+  #     - key: MPLADS_LIVE_HOUSE
+  #       value: "rajya_sabha"

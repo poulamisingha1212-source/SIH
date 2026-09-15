@@ -1,0 +1,59 @@
+name: MPLADS Incremental Batch Scraper
+
+on:
+  schedule:
+    # Runs every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+    # Allows 1-click manual trigger from GitHub Actions UI with custom options
+    inputs:
+      batch_size:
+        description: "Number of records to process (default: 5000)"
+        required: false
+        default: "5000"
+      house:
+        description: "MPLADS house (rajya_sabha | lok_sabha | both)"
+        required: false
+        default: "rajya_sabha"
+      reset_checkpoint:
+        description: "Reset checkpoint to 0 before running"
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  execute-batch-scraper:
+    name: Run Scraper Batch
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Standalone Scraper
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGO_DB_NAME: ${{ secrets.MONGO_DB_NAME || 'mplads_sentinel' }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size || '5000' }}
+          MPLADS_LIVE_HOUSE: ${{ github.event.inputs.house || 'rajya_sabha' }}
+          SCRAPER_CONCURRENCY: 3
+          REQUEST_TIMEOUT: 30
+          SCRAPER_CHUNK_SIZE: 100
+        run: |
+          EXTRA_ARGS=""
+          if [ "${{ github.event.inputs.reset_checkpoint }}" = "true" ]; then
+            EXTRA_ARGS="--reset-checkpoint"
+          fi
+          python scraper.py $EXTRA_ARGS
